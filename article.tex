@@ -1,0 +1,114 @@
+\documentclass[abstracton,a4paper,twocolumn,9pt]{scrartcl}
+\def\LASTCHANGED{2007-02-09}    % automatically updated by emacs
+\usepackage{url}
+\fussy
+
+% Define our layout
+\usepackage[hmargin={20mm,25mm},vmargin={15mm,25mm},offset=0pt,nohead]{geometry}
+\columnsep 8mm
+\hfuzz 1pt
+
+% Pretty-print Haskell code
+\usepackage{listings}
+\lstloadlanguages{Haskell}
+\lstnewenvironment{code}
+    {\lstset{}%
+      \csname lst@SetFirstLabel\endcsname}
+    {\csname lst@SaveFirstLabel\endcsname}
+    \lstset{
+      basicstyle=\small\ttfamily,
+      flexiblecolumns=false,
+      basewidth={0.5em,0.45em},
+      literate={-}{{$-$}}1 {+}{{$+$}}1 {=}{{$=$}}1
+               {>}{{$>$}}1 {<}{{$<$}}1 {\\}{{$\lambda$}}1
+               {->}{{$\rightarrow$}}2 {>=}{{$\geq$}}2 {<-}{{$\leftarrow$}}2
+               {<=}{{$\leq$}}2 {=>}{{$\Rightarrow$}}2
+               {>>}{{>>}}2 {>>=}{{>>=}}2
+               {\\\\}{{$\setminus\setminus$}}2
+               {\\t}{{$\setminus\mbox{t}$}}2
+               {\\r}{{$\setminus\mbox{r}$}}2
+               {\\n}{{$\setminus\mbox{n}$}}2
+               {\\"}{{$\setminus\mbox{"}$}}2
+               {\ .\ }{{$\circ$}}3
+               {+-}{{+-}}2
+    }
+\def\PlPl{\ensuremath{+\mkern-4mu+}}
+\def\PlPlOp{\ensuremath{<\mkern-12mu+\mkern-4mu+\mkern-12mu>}}
+
+\long\def\ignore#1{}  % for "uninteresting" code
+
+% Set special types consistently
+\newcommand{\module}[1]{\texttt{#1}}
+\newcommand{\fun}[1]{\textsf{#1}}
+\newcommand{\type}[1]{\textsf{#1}}
+
+% Here we go ...
+\begin{document}
+
+\title{State of the Art I/O}
+\author{Peter Simons $<$simons@cryp.to$>$}
+\date{\LASTCHANGED}
+\maketitle
+
+\begin{abstract}
+  This text aims to provide practical software engineers with insights
+  into the algorithms and data structures involved in the design of
+  high-performance Internet applications.
+\end{abstract}
+
+\section{Introduction} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \subsection{What does ``performance'' mean?}
+  \subsection{Sockets}
+    \paragraph{Endpoints}
+    \paragraph{Stream Protocols vs. Datagram Services}
+    \paragraph{sendmsg}
+    \paragraph{recvmsg}
+  \subsection{Heap Management}
+  \subsection{Scatter I/O}
+
+\section{Input/Output models}
+  \subsection{Blocking}
+  \subsection{Non-Blocking}
+  \subsection{Asynchronous}
+  \subsection{Event-Driven}
+
+\section{Buffering Strategies}
+  \subsection{Static Buffers for Input and Output}
+  \subsection{Paging}
+  \subsection{Dynamic Input}
+  \subsection{Dynamic Output}
+
+\section{Stream Processing ??}
+
+\section{Dynamic Buffering}
+  \subsection{Buffer Chains}
+
+\section{Multi-threaded Scheduling}
+
+\section{The Limits of Abstraction: Haskell}
+
+\section{The Beauty of Abstraction: Maude}
+
+
+\section{Conclusion} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{thebibliography}{9}
+    \bibitem{Haskell}
+      Haskell --- A Purely Functional Language,
+      \url{http://haskell.org/}
+
+\end{thebibliography}
+
+\end{document}
+
+%%%%% configure emacs
+%
+% Local variables:
+% eval: (add-hook 'write-file-hooks 'time-stamp)
+% fill-column: 72
+% time-stamp-start: "\\LASTCHANGED{"
+% time-stamp-format: "%:y-%02m-%02d"
+% time-stamp-end: "}"
+% time-stamp-line-limit: 5
+% End:
