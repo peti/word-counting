@@ -37,16 +37,16 @@ drain iob@(Iobuf bptr gap len cap) n
 -- I/O Devices
 
 class IOSink a where
-  sendMsg :: (MonadIO m) => a -> Iovec -> m ByteSize
+  sendMsg :: a -> Iovec -> IO ByteSize
 
 class IOSource a where
-  recvMsg :: (MonadIO m) => a -> Iovec -> m ByteSize
+  recvMsg :: a -> Iovec -> IO ByteSize
 
 instance IOSink Handle where
   sendMsg h (Iovec bptr cap)
     | bptr == nullPtr   = fail "sendMsg: no nullPtr"
     | cap == 0          = fail "sendMsg: no null buffer"
-    | otherwise         = liftIO (tryWrite False bptr cap >>= maybeRetryWrite)
+    | otherwise         = tryWrite False bptr cap >>= maybeRetryWrite
 
     where
       tryWrite :: Bool -> BytePtr -> ByteSize -> IO ByteSize
@@ -68,10 +68,10 @@ instance IOSource Handle where
   recvMsg h (Iovec p n)
     | p == nullPtr      = fail "recvMsg: no nullPtr"
     | n == 0            = fail "recvMsg: no null buffer"
-    | otherwise         = liftIO (catchJust
-                                   (\e -> ioErrors e >>= guard . isEOFError)
-                                   (tryRead >>= maybeRetryRead)
-                                   (\_ -> return 0))
+    | otherwise         = catchJust
+                            (\e -> ioErrors e >>= guard . isEOFError)
+                            (tryRead >>= maybeRetryRead)
+                            (\_ -> return 0)
     where
       tryRead           :: IO ByteSize
       tryRead           = fmap toSize $
@@ -99,7 +99,7 @@ instance Monad m => Arrow (SP m) where
   sp1       >>> Block sp2       = Block (liftM (sp1 >>>) sp2)
   Block sp1 >>> sp2             = Block (liftM (>>> sp2) sp1)
   arr f                         = Get (\i -> return (Put (f i) (arr f)))
-  first f                       = bypass [] f
+  first                         = bypass []
     where
       bypass :: Monad m => [c] -> SP m a b -> SP m (a,c) (b,c)
       bypass ds     (Get sp)    = Get (\(b,d) -> liftM (bypass (ds ++ [d])) (sp b))
@@ -147,9 +147,6 @@ test iov = readerSP stdin iov >>> writerSP stdout
 
 whileTrue :: (Monad m) => m Bool -> m () -> m ()
 whileTrue c f = c >>= \b -> when b (f >> whileTrue c f)
-
-class (MonadIO m) => MonadInput m where
-  consumeBy :: (Iovec -> m (Maybe (ByteSize, a))) -> (a -> m ()) -> m Bool
 
 drive :: (MonadIO m, IOSource d) => (ByteSize -> Iobuf -> m Iobuf) -> d -> Iobuf -> m Iobuf
 drive f dev (Iobuf bptr gap len cap) = do
