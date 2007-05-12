@@ -17,15 +17,10 @@ toInt                   :: ByteSize -> Int
 toInt                   = fromIntegral
 
 toSize                  :: Int -> ByteSize
-toSize n                = fromIntegral (assert (n > 0) n)
+toSize n                = fromIntegral (assert (n >= 0) n)
 
 data Iovec              = Iovec !BytePtr !ByteSize
                           deriving (Show, Eq)
-
-type SockAddrSize       = #{type socklen_t}
-data Endpoint           = Endpoint !(Ptr ()) !SockAddrSize
-
-data Iomsg              = Iomsg
 
 instance Storable Iovec where
   sizeOf _              = #{size struct iovec}
@@ -35,6 +30,9 @@ instance Storable Iovec where
                              return (Iovec p n)
   poke ptr (Iovec p n)  = do #{poke struct iovec, iov_base} ptr p
                              #{poke struct iovec, iov_len}  ptr n
+
+type SockAddrSize       = #{type socklen_t}
+data Endpoint           = Endpoint !(Ptr ()) !SockAddrSize
 
 -- foreign import ccall unsafe
 --   adns_synchronous :: AdnsState -> CString -> CInt -> CInt -> Ptr (Ptr Answer)
