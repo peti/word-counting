@@ -142,6 +142,9 @@ writerSP dev = Get sp
     sp iov@(Iovec p n)  = do i <- liftIO (sendMsg dev iov)
                              sp (Iovec (p `plusPtr` toInt i) (n - i))
 
+printSP :: (Show a) => SP IO a ()
+printSP = Get $ \a -> liftIO (print a) >> return printSP
+
 test :: (MonadIO m, MonadPlus m) => Iovec -> SP m () ()
 test iov = readerSP stdin iov >>> writerSP stdout
 
@@ -195,22 +198,22 @@ main = do
 
   let bufsize :: ByteSize
       bufsize = 4096
-
+{-
   -- run SP
 
   allocaArray (toInt bufsize) $ \p ->
     runSP (test (Iovec p bufsize))
 
   putStrLn "done"
+-}
 
-{-
   -- count words
 
   WC _ l w c <- allocaArray (toInt bufsize) $ \p ->
                   flip execStateT initWC $
                     slurp wcIovec stdin (Iobuf p 0 0 bufsize)
   putStrLn . shows l . (' ':) . shows w . (' ':) $ show c
--}
+
   -- done
 
   return ()
