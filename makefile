@@ -3,7 +3,7 @@
 .PHONY:	  all test clean distclean depend
 
 GHC       := ghc
-GHCFLAGS  := -Wall -O2 -funbox-strict-fields
+GHCFLAGS  := -Wall -O2 -funbox-strict-fields -i../streamproc
 TESTINPUT := test.data # usr/share/dict/words
 TESTS     := tutorial wc-hgetbuf wc-lazy wc-blockio iodriver new-io
 
@@ -24,10 +24,10 @@ TESTS     := tutorial wc-hgetbuf wc-lazy wc-blockio iodriver new-io
 all:		$(TESTS)
 
 test:		all $(TESTINPUT)
-#	time /usr/bin/wc <$(TESTINPUT)
+	time /usr/bin/wc <$(TESTINPUT)
 #	time ./tutorial wcLazy <$(TESTINPUT)
 #	time ./wc-lazy <$(TESTINPUT)
-	time ./wc-hgetbuf <$(TESTINPUT)
+#	time ./wc-hgetbuf <$(TESTINPUT)
 #	time ./wc-blockio <$(TESTINPUT)
 #	time ./tutorial wcHandle <$(TESTINPUT)
 #	time ./tutorial wc <$(TESTINPUT)
@@ -35,7 +35,7 @@ test:		all $(TESTINPUT)
 #	time ./tutorial lrev </etc/profile
 #	time ./tutorial lrevLazy <$(TESTINPUT) >/dev/null
 #	time ./iodriver <$(TESTINPUT) >/dev/null
-	time ./new-io <$(TESTINPUT) >/dev/null
+	time ./new-io <$(TESTINPUT)
 
 iodriver:	Types.hs
 

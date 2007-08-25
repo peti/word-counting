@@ -1,1 +1,1 @@
-:set -Wall -i../postmaster/hopenssl
+:set -Wall -i../postmaster/hopenssl  -i../streamproc
