@@ -1,5 +1,5 @@
 \documentclass[abstracton,a4paper,twocolumn,9pt]{scrartcl}
-\def\LASTCHANGED{2007-02-09}    % automatically updated by emacs
+\def\LASTCHANGED{2007-08-26}    % automatically updated by emacs
 \usepackage{url}
 \fussy
 
@@ -38,6 +38,7 @@
 \long\def\ignore#1{}  % for "uninteresting" code
 
 % Set special types consistently
+\newcommand{\tool}[1]{\texttt{#1}}
 \newcommand{\module}[1]{\texttt{#1}}
 \newcommand{\fun}[1]{\textsf{#1}}
 \newcommand{\type}[1]{\textsf{#1}}
@@ -45,50 +46,47 @@
 % Here we go ...
 \begin{document}
 
-\title{State of the Art I/O}
+\title{Strict I/O in Haskell}
 \author{Peter Simons $<$simons@cryp.to$>$}
 \date{\LASTCHANGED}
 \maketitle
 
 \begin{abstract}
-  This text aims to provide practical software engineers with insights
-  into the algorithms and data structures involved in the design of
-  high-performance Internet applications.
+  The difference between a clever algorithm and an useful application is
+  that the latter communicates with the real world. For example, a
+  QuickSort function is inherently useful, but that usefulness becomes
+  observable only when an unsorted dataset can be entered into a
+  computer program and a sorted dataset comes out. The QuickSort
+  function doesn't do that. Almost every user of the Unix shell knows
+  the utility \tool{sort} --- but not every one of those people who use
+  that utility knows about QuickSort. In other words: I/O matters.
+  Programs that perform no I/O are only zeros and ones.
+
+  Unfortunately, the Haskell community appears to regard the subject
+  with some suspicion. An experience many have made is that real-world
+  applications written in Haskell have a tendency to show underwhelming
+  performance characteristics when put to the test in a real-world
+  environment. The programs work just fine, but their resource
+  consumption is incredible.
+
+  Naturally, this effect is generally blamed on the I/O API, the
+  implementation, the compiler's optimizer, or on the language itself.
+  There is some truth in all of that, but the core of the problem is
+  that most everyday Haskell programs plainly suck at doing efficient
+  I/O.
+
+  This article is an investigation of the problem and an attempt to
+  outline possible solutions. The presented material will be most useful
+  to experienced Haskell programmers who would like to put the world's
+  finest imperative language to the task of communicating with the real
+  world.
 \end{abstract}
 
-\section{Introduction} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{I/O in Haskell is slow} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  \subsection{What does ``performance'' mean?}
-  \subsection{Sockets}
-    \paragraph{Endpoints}
-    \paragraph{Stream Protocols vs. Datagram Services}
-    \paragraph{sendmsg}
-    \paragraph{recvmsg}
-  \subsection{Heap Management}
-  \subsection{Scatter I/O}
+  \input{wc-lazy.lhs}
 
-\section{Input/Output models}
-  \subsection{Blocking}
-  \subsection{Non-Blocking}
-  \subsection{Asynchronous}
-  \subsection{Event-Driven}
 
-\section{Buffering Strategies}
-  \subsection{Static Buffers for Input and Output}
-  \subsection{Paging}
-  \subsection{Dynamic Input}
-  \subsection{Dynamic Output}
-
-\section{Stream Processing ??}
-
-\section{Dynamic Buffering}
-  \subsection{Buffer Chains}
-
-\section{Multi-threaded Scheduling}
-
-\section{The Limits of Abstraction: Haskell}
-
-\section{The Beauty of Abstraction: Maude}
 
 
 \section{Conclusion} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
