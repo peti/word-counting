@@ -1,72 +1,73 @@
 module Main ( main ) where
 
 import Prelude hiding ( null )
+import Control.Arrow.SP
 import System.IO hiding ( hPutStrLn )
 import System.IO.Error
 import Control.Exception
 import Control.Monad.State
+import Control.Monad.Error
 import Data.ByteString.Char8
+import Data.Monoid
+import Foreign
 import Timeout
 import WordCounting
-import Control.Arrow.SP
+
+-- * Error Handling
+
+timeoutErrorType :: IOError
+timeoutErrorType = userError "timeout"
+
+isTimeoutError :: IOError -> Bool
+isTimeoutError e
+  | isUserError e = ioeGetErrorString e == ioeGetErrorString timeoutErrorType
+  | otherwise     = False
+
+inputTimeout, outputTimeout :: Handle -> IOError
+inputTimeout h  = annotateIOError timeoutErrorType "input" (Just h) Nothing
+outputTimeout h = annotateIOError timeoutErrorType "output" (Just h) Nothing
+
+onError :: (MonadError e m) => (e -> Bool) -> a -> m a -> m a
+onError isE a f = catchError f (\e -> if isE e then return a else throwError e)
 
 -- * I/O Primitives
 
-type MaxReadSize = Int
 type MsecTimeout = Int
 
-recv :: (MonadIO m) => Handle -> MaxReadSize -> m ByteString
-recv h n = liftIO $ catchJust (\e -> ioErrors e >>= guard . isEOFError)
-                              (tryRead True >>= retryWhenEmpty)
-                              (\_ -> return empty)
-    where
-      tryRead           :: Bool -> IO ByteString
-      tryRead False     = return empty
-      tryRead True      = hGetNonBlocking h n
+timeoutError :: IOError -> MsecTimeout -> IO a -> IO a
+timeoutError e to f = timeout to f >>= maybe (ioError e) return
 
-      retryWhenEmpty    :: ByteString -> IO ByteString
-      retryWhenEmpty buf
-        | null buf      = hWaitForInput h (-1) >>= tryRead
-        | otherwise     = return buf
-
-send :: (MonadIO m) => Handle -> ByteString -> m ()
-send h str | null str  = liftIO (hFlush h)
-           | otherwise = liftIO (hPut h str)
-
--- ** I/O Timeouts
-
-mkTimeout, readTimeout, writeTimeout :: Handle -> IOError
-mkTimeout      = ioeSetHandle (userError "timeout")
-readTimeout  h = annotateIOError (mkTimeout h) "input"  Nothing Nothing
-writeTimeout h = annotateIOError (mkTimeout h) "output" Nothing Nothing
-
-isTimeoutError :: IOError -> Bool
-isTimeoutError e = isUserError e && ioeGetErrorString e == "timeout"
-
-recvTO :: (MonadIO m) => Handle -> MaxReadSize -> MsecTimeout -> m ByteString
-recvTO h n to = liftIO $
- timeout to (recv h n) >>= maybe (ioError (readTimeout h)) return
-
-sendTO :: (MonadIO m) => Handle -> Int -> ByteString -> m ()
-sendTO h to str = liftIO $
- timeout to (send h str) >>= maybe (ioError (writeTimeout h)) return
+waitForInput :: (MonadIO m) => Handle -> MsecTimeout -> m Bool
+waitForInput h to = liftIO $
+                      timeoutError (inputTimeout h) to $
+                        onError isEOFError False $
+                          hWaitForInput h (-1)
 
 -- * Monadic Stream Consumer
 
-slurp :: (Monad m) => m ByteString -> (ByteString -> m ()) -> m ()
-slurp source consumer =
-  source >>= \a -> when (not (null a)) (consumer a >> slurp source consumer)
+ifM :: (Monad m) => m Bool -> (m a, m a) -> m a
+ifM cond (true,false) = cond >>= \b -> if b then true else false
 
-wcByteString :: (Monad m) => ByteString -> StateT WordCount m ()
-wcByteString str = get >>= \st@(WC _ _ _ _) -> put $! foldl' (flip wc) st str
+whenM :: (Monad m) => m Bool -> m () -> m ()
+whenM cond f = ifM cond (f, return ())
+
+whileM :: (Monad m) => m Bool -> m () -> m ()
+whileM cond f = whenM cond (f >> whileM cond f)
+
+slurp :: (MonadIO m) => Handle -> (ByteString -> m ()) -> m ()
+slurp h f = whileM (waitForInput h (-1)) (liftIO (hGetNonBlocking h (8 * 1024)) >>= f)
 
 -- * Stream Processig Arrow
 
-readerSP :: (Monad m) => m ByteString -> SP m () ByteString
-readerSP source = Block $ do
-  buf <- source
-  return $ Put buf $ case null buf of True  -> zeroArrow
-                                      False -> readerSP source
+readerSP' :: (Monad m) => m Bool -> m a -> SP m () a -> SP m () a
+readerSP' waiter reader eof = Block $
+  ifM waiter (liftM (\a -> Put a (readerSP' waiter reader eof)) reader, return eof)
+
+readerSP :: (Monad m, Monoid a) => m Bool -> m a -> SP m () a
+readerSP waiter reader = readerSP' waiter reader (Put mempty zeroArrow)
+
+slurpSP :: (MonadIO m) => Handle -> MsecTimeout -> SP m () ByteString
+slurpSP h to = readerSP (waitForInput h to) (liftIO (hGetNonBlocking h (8 * 1024)))
 
 writerSP :: (Monad m) => (a -> m ()) -> SP m a ()
 writerSP = mapSP
@@ -89,15 +90,42 @@ byLine = Get (wait empty)
     run' (rest:[])   = Get (wait rest)
     run' (str:rest)  = Put str (run' rest)
 
+-- * Example Code
+
+wcByteString :: (Monad m) => ByteString -> StateT WordCount m ()
+wcByteString str = get >>= \st@(WC _ _ _ _) -> put $! foldl' (flip wc) st str
+
 wcSP :: (Monad m) => SP m ByteString WordCount
 wcSP = Get (run initWC)
   where
     run st@(WC _ _ _ _) buf
-      | null buf  = Put st wcSP
+      | null buf  = Put st zeroArrow
       | otherwise = Get (run $! foldl' (flip wc) st buf)
+
+wcPtr :: (MonadIO m) => SP m (Ptr Word8, Int) WordCount
+wcPtr = Get (run initWC)
+  where
+    run :: (MonadIO m) => WordCount -> (Ptr Word8, Int) -> SP m (Ptr Word8, Int) WordCount
+    run st@(WC _ _ _ _) (_,0) = Put st zeroArrow
+    run st@(WC _ _ _ _) (p,n) = Block $ liftM (Get . run) (liftIO (wcBuffer (p,n) st))
 
 main :: IO ()
 main = do
-  -- execStateT (slurp (recvTO stdin (8 * 1024) (5 * 1000000)) wcByteString) initWC >>= print
+  let bufsize = 8 * 1024
 
-  runSP $ (readerSP (recv stdin (8 * 1024)) >>> (wcSP <+> wcSP) >>> writerSP print)
+  hSetBuffering stdin  NoBuffering
+  hSetBuffering stdout NoBuffering
+
+  when False $ execStateT (slurp stdin wcByteString) initWC >>= print
+
+  let getBuffer h (p,n) = liftM (\i -> (p,i)) (hGetBufNonBlocking h p n)
+      moreInput h       = waitForInput h (-1)
+
+  when False $ allocaBytes bufsize $ \ptr ->
+    runSP $ readerSP' (moreInput stdin) (getBuffer stdin (ptr,bufsize)) (Put (nullPtr,0) zeroArrow) >>> wcPtr >>> writerSP print
+
+  when True $ do
+    cnt <- flip execStateT initWC $ runSP (slurpSP stdin (-1) >>> writerSP wcByteString)
+    print cnt
+
+  when False $ runSP $ slurpSP stdin (-1) >>> wcSP >>> writerSP print
