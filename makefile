@@ -5,7 +5,7 @@
 GHC       := ghc
 GHCFLAGS  := -Wall -O2 -funbox-strict-fields -i../streamproc
 TESTINPUT := test.data # usr/share/dict/words
-TESTS     := tutorial wc-hgetbuf wc-lazy wc-blockio iodriver new-io
+TESTS     := tutorial wc-hgetbuf wc-lazy wc-blockio new-io
 
 % : %.hs
 	${GHC} ${GHCFLAGS} --make $< -o $@
@@ -34,10 +34,7 @@ test:		all $(TESTINPUT)
 #	time ./tutorial lrev <$(TESTINPUT) >/dev/null
 #	time ./tutorial lrev </etc/profile
 #	time ./tutorial lrevLazy <$(TESTINPUT) >/dev/null
-#	time ./iodriver <$(TESTINPUT) >/dev/null
 	time ./new-io <$(TESTINPUT)
-
-iodriver:	Types.hs
 
 test.data:
 	dd if=/dev/urandom of=$@ bs=1M count=512
