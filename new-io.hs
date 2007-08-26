@@ -1,3 +1,5 @@
+{-# OPTIONS -farrows #-}
+
 module Main ( main ) where
 
 import Prelude hiding ( null )
@@ -54,9 +56,6 @@ whenM cond f = ifM cond (f, return ())
 whileM :: (Monad m) => m Bool -> m () -> m ()
 whileM cond f = whenM cond (f >> whileM cond f)
 
-slurp :: (MonadIO m) => Handle -> (ByteString -> m ()) -> m ()
-slurp h f = whileM (waitForInput h (-1)) (liftIO (hGetNonBlocking h (8 * 1024)) >>= f)
-
 -- * Stream Processig Arrow
 
 readerSP' :: (Monad m) => m Bool -> m a -> SP m () a -> SP m () a
@@ -92,18 +91,25 @@ byLine = Get (wait empty)
 
 -- * Example Code
 
+slurp :: (MonadIO m) => Handle -> MsecTimeout -> (ByteString -> m ()) -> m ()
+slurp h to f = whileM (waitForInput h to) (liftIO (hGetNonBlocking h (8 * 1024)) >>= f)
+
 wcByteString :: (Monad m) => ByteString -> StateT WordCount m ()
 wcByteString str = get >>= \st@(WC _ _ _ _) -> put $! foldl' (flip wc) st str
 
-wcSP :: (Monad m) => SP m ByteString WordCount
-wcSP = Get (run initWC)
+wcStrSP :: (Monad m) => SP m ByteString WordCount
+wcStrSP = Get (run initWC)
   where
     run st@(WC _ _ _ _) buf
       | null buf  = Put st zeroArrow
       | otherwise = Get (run $! foldl' (flip wc) st buf)
 
-wcPtr :: (MonadIO m) => SP m (Ptr Word8, Int) WordCount
-wcPtr = Get (run initWC)
+bufferReader :: (MonadIO m) => Handle -> MsecTimeout -> (Ptr Word8, Int) -> SP m () (Ptr Word8, Int)
+bufferReader h to (p,n) =
+    readerSP' (waitForInput h to) (liftM (\i -> (p,i)) (liftIO (hGetBufNonBlocking h p n))) (Put (p,0) zeroArrow)
+
+wcBufSP :: (MonadIO m) => SP m (Ptr Word8, Int) WordCount
+wcBufSP = Get (run initWC)
   where
     run :: (MonadIO m) => WordCount -> (Ptr Word8, Int) -> SP m (Ptr Word8, Int) WordCount
     run st@(WC _ _ _ _) (_,0) = Put st zeroArrow
@@ -122,10 +128,17 @@ main = do
       moreInput h       = waitForInput h (-1)
 
   when False $ allocaBytes bufsize $ \ptr ->
-    runSP $ readerSP' (moreInput stdin) (getBuffer stdin (ptr,bufsize)) (Put (nullPtr,0) zeroArrow) >>> wcPtr >>> writerSP print
+    runSP $ bufferReader stdin (-1) (ptr,bufsize) >>> wcBufSP >>> writerSP print
 
-  when True $ do
+  let consume buf = get >>= \st -> liftIO (wcBuffer buf st) >>= put
+
+  when True $ allocaBytes bufsize $ \ptr -> do
+    cnt <- flip execStateT initWC $
+      runSP $ bufferReader stdin (-1) (ptr,bufsize) >>> writerSP consume
+    print cnt
+
+  when False $ do
     cnt <- flip execStateT initWC $ runSP (slurpSP stdin (-1) >>> writerSP wcByteString)
     print cnt
 
-  when False $ runSP $ slurpSP stdin (-1) >>> wcSP >>> writerSP print
+  when False $ runSP $ slurpSP stdin (-1) >>> wcStrSP >>> writerSP print
