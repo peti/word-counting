@@ -1,60 +1,16 @@
-{-# OPTIONS -farrows #-}
+{-# OPTIONS -fglasgow-exts -farrows #-}
 
 module Main ( main ) where
 
 import Prelude hiding ( null )
+import System.Environment ( getArgs )
 import Control.Arrow.SP
-import System.IO hiding ( hPutStrLn )
-import System.IO.Error
-import Control.Exception
 import Control.Monad.State
-import Control.Monad.Error
 import Data.ByteString.Char8
 import Data.Monoid
 import Foreign
-import Timeout
 import WordCounting
-
--- * Error Handling
-
-timeoutErrorType :: IOError
-timeoutErrorType = userError "timeout"
-
-isTimeoutError :: IOError -> Bool
-isTimeoutError e
-  | isUserError e = ioeGetErrorString e == ioeGetErrorString timeoutErrorType
-  | otherwise     = False
-
-inputTimeout, outputTimeout :: Handle -> IOError
-inputTimeout h  = annotateIOError timeoutErrorType "input" (Just h) Nothing
-outputTimeout h = annotateIOError timeoutErrorType "output" (Just h) Nothing
-
-onError :: (MonadError e m) => (e -> Bool) -> a -> m a -> m a
-onError isE a f = catchError f (\e -> if isE e then return a else throwError e)
-
--- * I/O Primitives
-
-type MsecTimeout = Int
-
-timeoutError :: IOError -> MsecTimeout -> IO a -> IO a
-timeoutError e to f = timeout to f >>= maybe (ioError e) return
-
-waitForInput :: (MonadIO m) => Handle -> MsecTimeout -> m Bool
-waitForInput h to = liftIO $
-                      timeoutError (inputTimeout h) to $
-                        onError isEOFError False $
-                          hWaitForInput h (-1)
-
--- * Monadic Stream Consumer
-
-ifM :: (Monad m) => m Bool -> (m a, m a) -> m a
-ifM cond (true,false) = cond >>= \b -> if b then true else false
-
-whenM :: (Monad m) => m Bool -> m () -> m ()
-whenM cond f = ifM cond (f, return ())
-
-whileM :: (Monad m) => m Bool -> m () -> m ()
-whileM cond f = whenM cond (f >> whileM cond f)
+import Glue
 
 -- * Stream Processig Arrow
 
@@ -89,10 +45,7 @@ byLine = Get (wait empty)
     run' (rest:[])   = Get (wait rest)
     run' (str:rest)  = Put str (run' rest)
 
--- * Example Code
-
-slurp :: (MonadIO m) => Handle -> MsecTimeout -> (ByteString -> m ()) -> m ()
-slurp h to f = whileM (waitForInput h to) (liftIO (hGetNonBlocking h (8 * 1024)) >>= f)
+-- * Word-counting Example Code
 
 wcByteString :: (Monad m) => ByteString -> StateT WordCount m ()
 wcByteString str = get >>= \st@(WC _ _ _ _) -> put $! foldl' (flip wc) st str
@@ -115,30 +68,33 @@ wcBufSP = Get (run initWC)
     run st@(WC _ _ _ _) (_,0) = Put st zeroArrow
     run st@(WC _ _ _ _) (p,n) = Block $ liftM (Get . run) (liftIO (wcBuffer (p,n) st))
 
+-- * HTTP Daemon
+
+-- * Command-line driver
+
 main :: IO ()
 main = do
-  let bufsize = 8 * 1024
+  let bufsize :: Int
+      bufsize = 8 * 1024
 
-  hSetBuffering stdin  NoBuffering
-  hSetBuffering stdout NoBuffering
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout (BlockBuffering (Just bufsize))
+  hSetBuffering stderr LineBuffering
 
-  when False $ execStateT (slurp stdin wcByteString) initWC >>= print
+  let consume :: (Ptr Word8, Int) -> StateT WordCount IO ()
+      consume buf = get >>= \st -> liftIO (wcBuffer buf st) >>= put
 
-  let getBuffer h (p,n) = liftM (\i -> (p,i)) (hGetBufNonBlocking h p n)
-      moreInput h       = waitForInput h (-1)
+  allocaBytes bufsize $ \ptr -> do
+  args <- getArgs
+  case args of
+    "wcBuffer"    : _ -> runSP $ bufferReader stdin (-1) (ptr,bufsize) >>> wcBufSP >>> writerSP print
 
-  when False $ allocaBytes bufsize $ \ptr ->
-    runSP $ bufferReader stdin (-1) (ptr,bufsize) >>> wcBufSP >>> writerSP print
+    "wcBufferST"  : _ -> do cnt <- flip execStateT initWC $ runSP $ bufferReader stdin (-1) (ptr,bufsize) >>> writerSP consume
+                            print cnt
 
-  let consume buf = get >>= \st -> liftIO (wcBuffer buf st) >>= put
+    "wcSlurpSP"   : _ -> do cnt <- flip execStateT initWC $ runSP (slurpSP stdin (-1) >>> writerSP wcByteString)
+                            print cnt
 
-  when True $ allocaBytes bufsize $ \ptr -> do
-    cnt <- flip execStateT initWC $
-      runSP $ bufferReader stdin (-1) (ptr,bufsize) >>> writerSP consume
-    print cnt
+    "wcByteStrSP" : _ -> do runSP $ slurpSP stdin (-1) >>> wcStrSP >>> writerSP print
 
-  when False $ do
-    cnt <- flip execStateT initWC $ runSP (slurpSP stdin (-1) >>> writerSP wcByteString)
-    print cnt
-
-  when False $ runSP $ slurpSP stdin (-1) >>> wcStrSP >>> writerSP print
+    _                 -> fail "usage: ./new-io (wcBuffer | wcBufferST | wcSlurpSP | wcByteStrSP)"
