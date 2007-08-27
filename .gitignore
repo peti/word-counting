@@ -1,10 +1,8 @@
 *.hi
 *.o
-Types.hs
-iodriver
 new-io
 test.data
-tutorial
 wc-blockio
 wc-hgetbuf
 wc-lazy
+wc-whilem-bytestring
