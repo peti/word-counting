@@ -1,8 +1,8 @@
 module Main ( main ) where
 
 import System.IO
-import System.IO.Driver
 import Foreign
+import BlockIO
 import WordCounting
 
 bufsize :: ByteCount                -- our I/O buffer size
