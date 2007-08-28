@@ -9,6 +9,8 @@ import Control.Monad.State
 import Data.ByteString.Char8
 import Data.Monoid
 import Foreign
+import Foreign.C.String
+import Data.Char
 import WordCounting
 import Glue
 
@@ -18,6 +20,9 @@ type ByteSize   = Int
 type BytePtr    = Ptr Word8
 type Buffer     = (BytePtr, ByteSize)
 type BufferSize = ByteSize
+
+withBuffer :: String -> (Buffer -> IO a) -> IO a
+withBuffer buf f = withArray (Prelude.map (fromIntegral . ord) buf) (\p -> f (p, Prelude.length buf))
 
 -- * Stream Processig Arrow
 
@@ -92,19 +97,29 @@ httpd bufsize (hIn,toIn) (hOut,toOut) = do
         allocaBytes bufsize $ \ptr ->
           runErrorT $
             runSP $
-              let reader        = bufferReader hIn toIn (ptr,bufsize)
-                  writer        = bufferWriter hOut toOut
-                  throwShutdown = mapSP (\buf -> if nullbuf buf then throwError "" else return buf)
-                  nullbuf (p,n) = p == nullPtr || n == 0
+              let reader         =  bufferReader hIn toIn (ptr,bufsize)
+                  writer         =  bufferWriter hOut toOut
+                  throwShutdown  =  mapSP (\buf -> if nullBuf buf then throwError "" else return buf)
+                  nullBuf (_,0)  =  True
+                  nullBuf (p,_)  =  p == nullPtr
               in
               reader >>> httpdSP >>> throwShutdown >>> writer
   return ()
 
-data HttpEvent = Request ByteString Int Int
-               deriving (Show)
-
 httpdSP :: SPIO Buffer Buffer
 httpdSP = mapSP (\_ -> return (nullPtr,0))
+
+type Uri = ByteString
+
+data RequestMethod = GET | POST
+                   deriving (Show)
+
+data HttpEvent = Request RequestMethod Uri (Int,Int)
+               | HostHeader ByteString
+               | ConnectionHeader ByteString
+               | UnknownHeader ByteString ByteString
+               | EndOfHeader
+               deriving (Show)
 
 -- * Command-line driver
 
