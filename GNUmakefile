@@ -15,17 +15,11 @@ TESTS     := wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring
 	${GHC} ${GHCFLAGS} --make $< -o $@
 	@rm -f Main.o Main.hi
 
-%.html : %.lhs
-	lhs2html $<
-
-%.hs : %.hsc
-	hsc2hs $<
-
 all:		$(TESTS)
 
 test:		all $(TESTINPUT)
 	time /usr/bin/wc <$(TESTINPUT)
-	time ./wc-lazy <$(TESTINPUT)
+#	time ./wc-lazy <$(TESTINPUT)
 	time ./wc-hgetbuf <$(TESTINPUT)
 	time ./wc-blockio <$(TESTINPUT)
 	time ./wc-whilem-bytestring <$(TESTINPUT)
@@ -39,10 +33,10 @@ test.data:
 
 clean:
 	@rm -f `find . \( -name '*.o' -o -name '*.hi' \)`
-	@rm -f tutorial.html $(TESTS)
+	@rm -f $(TESTS)
 
 distclean:	clean
 	@rm -f test.data
 
 depend:
-	${GHC} -M -optdep-f -optdepmakefile $(GHCFLAGS) `find . -name '*.hs'`
+	${GHC} -M -optdep-f -optdepmakefile $(GHCFLAGS) `find . -name '*hs'`
