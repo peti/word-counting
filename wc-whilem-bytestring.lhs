@@ -27,3 +27,13 @@ main = do
 
   execStateT (slurp stdin (-1) wcByteString) initWC >>= print
 \end{code}
+
+\begin{verbatim} aucl s
+
+%%%%% configure emacs
+%
+% Local variables:
+% mode: latex
+% fill-column: 72
+% mmm-classes: literate-haskell-latex
+% End:

@@ -1,5 +1,5 @@
 \documentclass[abstracton,a4paper,twocolumn,9pt]{scrartcl}
-\def\LASTCHANGED{2007-08-26}    % automatically updated by emacs
+\def\LASTCHANGED{2007-08-29}    % automatically updated by emacs
 \usepackage{url}
 \fussy
 
@@ -42,6 +42,11 @@
 \newcommand{\module}[1]{\texttt{#1}}
 \newcommand{\fun}[1]{\textsf{#1}}
 \newcommand{\type}[1]{\textsf{#1}}
+
+\begin{code}
+claus = test
+\end{code}
+
 
 % Here we go ...
 \begin{document}
@@ -105,6 +110,7 @@
 % Local variables:
 % eval: (add-hook 'write-file-hooks 'time-stamp)
 % fill-column: 72
+% mmm-classes: literate-haskell-latex
 % time-stamp-start: "\\LASTCHANGED{"
 % time-stamp-format: "%:y-%02m-%02d"
 % time-stamp-end: "}"

@@ -14,3 +14,11 @@ main = do
              show (length (words file)) ++ " " ++
              show (length file)
 \end{code}
+
+%%%%% configure emacs
+%
+% Local variables:
+% mode: latex
+% fill-column: 72
+% mmm-classes: literate-haskell-latex
+% End:
