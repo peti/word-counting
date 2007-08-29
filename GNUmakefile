@@ -2,10 +2,11 @@
 
 .PHONY:	  all test clean distclean depend
 
-GHC       := ghc
-GHCFLAGS  := -Wall -O2 -funbox-strict-fields -i../streamproc
-TESTINPUT := test.data # usr/share/dict/words
-TESTS     := wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring
+GHC		= ghc-6.6.1
+GHCFLAGS	= -Wall -O2 -funbox-strict-fields -i../streamproc
+TESTINPUT	= test.data # usr/share/dict/words
+TESTS		= wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring \
+		  cat-bytestring cat-hgetbuf
 
 % : %.hs
 	${GHC} ${GHCFLAGS} --make $< -o $@
@@ -18,15 +19,19 @@ TESTS     := wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring
 all:		$(TESTS)
 
 test:		all $(TESTINPUT)
-	time /usr/bin/wc <$(TESTINPUT)
+#	time /bin/cat <$(TESTINPUT) >/dev/null
+#	time ./cat-hgetbuf <$(TESTINPUT) >/dev/null
+#	time ./cat-bytestring <$(TESTINPUT) >/dev/null
+
+#	time /usr/bin/wc <$(TESTINPUT)
 #	time ./wc-lazy <$(TESTINPUT)
-	time ./wc-hgetbuf <$(TESTINPUT)
-	time ./wc-blockio <$(TESTINPUT)
-	time ./wc-whilem-bytestring <$(TESTINPUT)
-	time ./new-io wcBuffer <$(TESTINPUT)
-	time ./new-io wcBufferST <$(TESTINPUT)
-	time ./new-io wcSlurpSP <$(TESTINPUT)
-	time ./new-io wcByteStrSP <$(TESTINPUT)
+#	time ./wc-hgetbuf <$(TESTINPUT)
+#	time ./wc-blockio <$(TESTINPUT)
+#	time ./wc-whilem-bytestring <$(TESTINPUT)
+#	time ./new-io wcBuffer <$(TESTINPUT)
+#	time ./new-io wcBufferST <$(TESTINPUT)
+#	time ./new-io wcSlurpSP <$(TESTINPUT)
+#	time ./new-io wcByteStrSP <$(TESTINPUT)
 
 test.data:
 	dd if=/dev/urandom of=$@ bs=1M count=512
