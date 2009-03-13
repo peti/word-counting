@@ -2,7 +2,7 @@
 
 .PHONY:	  all test clean distclean depend
 
-GHC		= ghc-6.6.1
+GHC		= ghc
 GHCFLAGS	= -Wall -O2 -funbox-strict-fields -i../streamproc
 TESTINPUT	= test.data # usr/share/dict/words
 TESTS		= wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring \
