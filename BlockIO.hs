@@ -24,7 +24,7 @@ import Data.Typeable
 import System.IO
 import System.IO.Error hiding ( catch )
 import Foreign  hiding ( new )
-import Timeout
+import System.Timeout
 
 -- * Static Buffer I\/O
 
@@ -67,9 +67,9 @@ type Timeout = Int
 
 slurp :: Timeout -> ReadHandle -> Buffer -> IO (Maybe Buffer)
 slurp to h b@(Buf cap ptr len) = do
-  when (cap <= len) (throwDyn (BufferOverflow h b))
+  when (cap <= len) (throw (BufferOverflow h b))
   timeout to (handleEOF wrap) >>=
-    maybe (throwDyn (ReadTimeout to h b)) return
+    maybe (throw (ReadTimeout to h b)) return
   where
   wrap = do let ptr' = ptr `plusPtr` (fromIntegral len)
                 n    = cap - len
@@ -87,20 +87,22 @@ slurp to h b@(Buf cap ptr len) = do
 
 type BlockHandler st = Buffer -> st -> IO (Buffer, st)
 
+type ExceptionHandler st e = e -> st -> IO st
+
 -- |Our main I\/O driver.
 
 runLoopNB
   :: (st -> Timeout)            -- ^ user state provides timeout
-  -> (Exception -> st -> IO st) -- ^ user provides I\/O error handler
+  -> (IOError -> st -> IO st)   -- ^ user provides I\/O error handler
   -> ReadHandle                 -- ^ the input source
   -> Capacity                   -- ^ I\/O buffer size
   -> BlockHandler st            -- ^ callback
   -> st                         -- ^ initial callback state
   -> IO st                      -- ^ return final callback state
-runLoopNB mkTO errH hIn cap f initST = withBuffer cap (flip ioloop $ initST)
+runLoopNB mkTO errH hIn cap f initST = withBuffer cap (flip ioloop initST)
   where
   ioloop buf st = buf `seq` st `seq`
-    handle (\e -> errH e st) $ do
+    handle ((flip errH) st) $ do
       rc <- slurp (mkTO st) hIn buf
       case rc of
         Nothing   -> return st
@@ -132,11 +134,14 @@ handleStream f buf@(Buf _ ptr len) st = do
 data BufferOverflow = BufferOverflow ReadHandle Buffer
                     deriving (Show, Typeable)
 
+instance Exception BufferOverflow where
+
 -- |Thrown by 'slurp'.
 
 data ReadTimeout    = ReadTimeout Timeout ReadHandle Buffer
                     deriving (Show, Typeable)
 
+instance Exception ReadTimeout where
 
 -- * Internal Helper Functions
 
@@ -145,7 +150,7 @@ data ReadTimeout    = ReadTimeout Timeout ReadHandle Buffer
 
 handleEOF :: IO a -> IO (Maybe a)
 handleEOF f =
-  catchJust ioErrors
+  catchJust fromException
     (fmap Just f)
     (\e -> if isEOFError e then return Nothing else ioError e)
 

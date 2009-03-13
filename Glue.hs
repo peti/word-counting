@@ -3,7 +3,7 @@ module Glue
   , module System.IO
   , module System.IO.Error
   , module Control.Monad.Error
-  , module Timeout
+  , module System.Timeout
   )
   where
 
@@ -11,7 +11,7 @@ import System.IO
 import System.IO.Error
 import Control.Monad.Error
 import Control.Exception ( bracket )
-import Timeout
+import System.Timeout
 
 -- * Error Handling
 
