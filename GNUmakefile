@@ -6,7 +6,7 @@ GHC		= ghc
 GHCFLAGS	= -Wall -O2 -funbox-strict-fields -i../streamproc
 TESTINPUT	= test.data # usr/share/dict/words
 TESTS		= wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring \
-		  cat-bytestring cat-hgetbuf cat cat-malloc
+		  cat-bytestring cat-hgetbuf cat cat-malloc fast-io
 
 CFLAGS		= -O3 -Wall -pedantic
 
