@@ -1,5 +1,6 @@
-*.hi
-*.o
+/*.hi
+/*.o
+/.ghci
 /cat
 /cat-bytestring
 /cat-hgetbuf
