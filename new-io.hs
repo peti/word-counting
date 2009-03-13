@@ -1,4 +1,5 @@
-{-# OPTIONS -fglasgow-exts -farrows #-}
+{-# LANGUAGE Arrows #-}
+{-# OPTIONS -fglasgow-exts #-}
 
 module Main ( main ) where
 
@@ -9,7 +10,6 @@ import Control.Monad.State
 import Data.ByteString.Char8
 import Data.Monoid
 import Foreign
-import Foreign.C.String
 import Data.Char
 import WordCounting
 import Glue
