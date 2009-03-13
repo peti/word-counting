@@ -93,7 +93,7 @@ type ExceptionHandler st e = e -> st -> IO st
 
 runLoopNB
   :: (st -> Timeout)            -- ^ user state provides timeout
-  -> (IOError -> st -> IO st)   -- ^ user provides I\/O error handler
+  -> (SomeException -> st -> IO st)   -- ^ user provides I\/O error handler
   -> ReadHandle                 -- ^ the input source
   -> Capacity                   -- ^ I\/O buffer size
   -> BlockHandler st            -- ^ callback
