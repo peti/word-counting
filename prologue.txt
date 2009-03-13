@@ -1,7 +1,0 @@
-This library provides a generic driver for applications that
-want to do I\/O real fast. The driver does all the tedious
-things involved in block-oriented I\/O (like buffer
-management), and uses a \"callback function\" to process the
-data it has read. The idea is that all you have to write is
-a 'System.IO.Driver.BlockHandler', which does no I\/O at all
-but just processes the data as it comes in.
