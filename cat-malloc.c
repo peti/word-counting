@@ -36,7 +36,7 @@ int main(int argc, char** argv)
     else
       break;
 
-    //free(p);
+    free(p);
   }
 
   return 0;
