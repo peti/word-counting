@@ -1,7 +1,8 @@
 module Main ( main ) where
 
 import System.IO
-import qualified Data.ByteString.Base as Str
+import qualified Data.ByteString.Unsafe as Str
+import qualified Data.ByteString.Internal as Str
 import qualified Data.ByteString as Str
 import Data.ByteString ( ByteString )
 
