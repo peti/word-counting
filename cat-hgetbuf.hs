@@ -16,4 +16,5 @@ catBuf hIn hOut = allocaBytes bufsize input
 main :: IO ()
 main = do
   mapM_ (\h -> hSetBuffering h NoBuffering) [ stdin, stdout ]
+  mapM_ (\h -> hSetBinaryMode h True) [ stdin, stdout ]
   catBuf stdin stdout
