@@ -4,11 +4,14 @@
 
 GHC		= ghc
 GHCFLAGS	= -Wall -O2 -funbox-strict-fields -i../streamproc
-TESTINPUT	= test.data # usr/share/dict/words
+TESTINPUT	= test.data
 TESTS		= wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring \
 		  cat-bytestring cat-hgetbuf cat cat-malloc fast-io
 
 CFLAGS		= -O3 -Wall -pedantic
+
+RUNTEST		= env -i bash --noprofile --norc -c \
+		  'ulimit -S -v 1048576; time -p $1 <$(TESTINPUT) >$(TESTINPUT).out'
 
 % : %.hs
 	${GHC} ${GHCFLAGS} --make $< -o $@
@@ -21,24 +24,24 @@ CFLAGS		= -O3 -Wall -pedantic
 all:		$(TESTS)
 
 test:		all $(TESTINPUT)
-	time /bin/cat <$(TESTINPUT) >/dev/null
-	time ./cat-hgetbuf <$(TESTINPUT) >/dev/null
-	time ./cat-bytestring <$(TESTINPUT) >/dev/null
-#	time ./cat <$(TESTINPUT) >/dev/null
-#	time ./cat-malloc <$(TESTINPUT) >/dev/null
+	$(call RUNTEST,/bin/cat)
+	$(call RUNTEST,./cat-hgetbuf)
+	$(call RUNTEST,./cat-bytestring)
+	$(call RUNTEST,./cat)
+	$(call RUNTEST,./cat-malloc)
 
-#	time /usr/bin/wc <$(TESTINPUT)
-#	time ./wc-lazy <$(TESTINPUT)
-#	time ./wc-hgetbuf <$(TESTINPUT)
-#	time ./wc-blockio <$(TESTINPUT)
-#	time ./wc-whilem-bytestring <$(TESTINPUT)
-#	time ./new-io wcBuffer <$(TESTINPUT)
-#	time ./new-io wcBufferST <$(TESTINPUT)
-#	time ./new-io wcSlurpSP <$(TESTINPUT)
-#	time ./new-io wcByteStrSP <$(TESTINPUT)
+#	$(call RUNTEST,/usr/bin/wc)
+#	$(call RUNTEST,./wc-lazy)
+#	$(call RUNTEST,./wc-hgetbuf)
+#	$(call RUNTEST,./wc-blockio)
+#	$(call RUNTEST,./wc-whilem-bytestring)
+#	$(call RUNTEST,./new-io wcBuffer)
+#	$(call RUNTEST,./new-io wcBufferST)
+#	$(call RUNTEST,./new-io wcSlurpSP)
+#	$(call RUNTEST,./new-io wcByteStrSP)
 
 test.data:
-	dd if=/dev/urandom of=$@ bs=1M count=512
+	dd if=/dev/urandom of=$@ bs=1M count=1024
 
 clean:
 	@rm -f `find . \( -name '*.o' -o -name '*.hi' \)`
