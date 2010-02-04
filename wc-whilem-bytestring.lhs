@@ -21,6 +21,7 @@ main = do
   let bufsize :: Int
       bufsize = 8 * 1024
 
+  hSetBinaryMode stdin True
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout (BlockBuffering (Just bufsize))
   hSetBuffering stderr LineBuffering

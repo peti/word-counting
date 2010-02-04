@@ -23,5 +23,6 @@ catString hIn hOut = Str.create bufsize (\_ -> return ()) >>= input
 
 main :: IO ()
 main = do
+  mapM_ (\h -> hSetBinaryMode h True) [ stdin, stdout ]
   mapM_ (\h -> hSetBuffering h NoBuffering) [ stdin, stdout ]
   catString stdin stdout
