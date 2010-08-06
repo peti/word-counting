@@ -5,6 +5,7 @@
 /cat-bytestring
 /cat-hgetbuf
 /cat-malloc
+/cont-io
 /fast-io
 /new-io
 /test.data
