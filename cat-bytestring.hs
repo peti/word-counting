@@ -1,20 +1,18 @@
 module Main ( main ) where
 
 import System.IO
+import System.Environment
 import qualified Data.ByteString.Unsafe as Str
 import qualified Data.ByteString.Internal as Str
 import qualified Data.ByteString as Str
 import Data.ByteString ( ByteString )
 
-bufsize :: Int
-bufsize = 4 * 1024
-
 hGet :: Handle -> ByteString -> IO ByteString
-hGet h buf = do i <- Str.unsafeUseAsCStringLen buf (\(p,n) -> hGetBuf h p n)
+hGet h buf = do i <- Str.unsafeUseAsCStringLen buf (uncurry (hGetBuf h))
                 return (Str.unsafeTake i buf)
 
-catString :: Handle -> Handle -> IO ()
-catString hIn hOut = Str.create bufsize (\_ -> return ()) >>= input
+catString :: Int -> Handle -> Handle -> IO ()
+catString bufsize hIn hOut = Str.create bufsize (\_ -> return ()) >>= input
   where
   input buf      = hGet hIn buf >>= output buf
   output buf b
@@ -23,6 +21,8 @@ catString hIn hOut = Str.create bufsize (\_ -> return ()) >>= input
 
 main :: IO ()
 main = do
-  mapM_ (\h -> hSetBinaryMode h True) [ stdin, stdout ]
-  mapM_ (\h -> hSetBuffering h NoBuffering) [ stdin, stdout ]
-  catString stdin stdout
+  args <- getArgs
+  let bufsize = if null args then 4096 else read (head args)
+  mapM_ (`hSetBinaryMode` True) [ stdin, stdout ]
+  mapM_ (`hSetBuffering` NoBuffering) [ stdin, stdout ]
+  catString bufsize stdin stdout

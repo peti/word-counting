@@ -1,13 +1,11 @@
 module Main ( main ) where
 
 import System.IO
+import System.Environment
 import Foreign ( allocaBytes )
 
-bufsize :: Int
-bufsize = 4 * 1024
-
-catBuf :: Handle -> Handle -> IO ()
-catBuf hIn hOut = allocaBytes bufsize input
+catBuf :: Int -> Handle -> Handle -> IO ()
+catBuf bufsize hIn hOut = allocaBytes bufsize input
   where
   input ptr    = hGetBuf hIn ptr bufsize >>= output ptr
   output  _  0 = return ()
@@ -15,6 +13,8 @@ catBuf hIn hOut = allocaBytes bufsize input
 
 main :: IO ()
 main = do
-  mapM_ (\h -> hSetBinaryMode h True) [ stdin, stdout ]
-  mapM_ (\h -> hSetBuffering h NoBuffering) [ stdin, stdout ]
-  catBuf stdin stdout
+  args <- getArgs
+  let bufsize = if null args then 4096 else read (head args)
+  mapM_ (`hSetBinaryMode` True) [ stdin, stdout ]
+  mapM_ (`hSetBuffering` NoBuffering) [ stdin, stdout ]
+  catBuf bufsize stdin stdout

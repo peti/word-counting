@@ -1,17 +1,17 @@
-# to.cryp.blockio
+# GNUmakefile
 
-.PHONY:	  all test clean distclean depend
+.PHONY:   all test clean distclean depend
 
-GHC		= ghc
-GHCFLAGS	= -Wall -O2 -funbox-strict-fields -i../streamproc
-TESTINPUT	= test.data
-TESTS		= wc-hgetbuf wc-lazy wc-blockio new-io wc-whilem-bytestring \
-		  cat-bytestring cat-hgetbuf cat cat-malloc fast-io
+GHC             = ghc
+GHCFLAGS        = -Wall -O2 -funbox-strict-fields
 
-CFLAGS		= -O3 -Wall -pedantic
+RANDOM_DEVICE  := $(word 1, $(wildcard /dev/frandom /dev/urandom))
+TESTDATA        = /dev/shm/test.data
+TESTDATA_SIZE   = 15 # in GByte
 
-RUNTEST		= env -i bash --noprofile --norc -c \
-		  'ulimit -S -v 1048576; time -p $1 <$(TESTINPUT) >$(TESTINPUT).out'
+TESTS           = cat-bytestring cat-hgetbuf
+
+RUNTEST         = time -p env -i PATH=$$PATH $1 <$(TESTDATA) >/dev/null
 
 % : %.hs
 	${GHC} ${GHCFLAGS} --make $< -o $@
@@ -23,32 +23,35 @@ RUNTEST		= env -i bash --noprofile --norc -c \
 
 all:		$(TESTS)
 
-test:		all $(TESTINPUT)
-	$(call RUNTEST,/bin/cat)
-	$(call RUNTEST,./cat-hgetbuf)
-	$(call RUNTEST,./cat-bytestring)
-	$(call RUNTEST,./cat)
-	$(call RUNTEST,./cat-malloc)
+test:		all $(TESTDATA)
+	@echo "##### POSIX cat with 32KB i/o buffer"
+	@echo ""
+	$(call RUNTEST,cat)
+	@echo ""
+	@echo "##### Haskell cat with 32KB i/o buffer"
+	@echo ""
+	$(call RUNTEST,./cat-hgetbuf 32768)
+	$(call RUNTEST,./cat-bytestring 32768)
+	@echo ""
+	@echo "##### Haskell cat with 128KB i/o buffer"
+	@echo ""
+	$(call RUNTEST,./cat-hgetbuf 131072)
+	$(call RUNTEST,./cat-bytestring 131072)
+	@echo ""
+	@echo "##### Haskell cat with 1GB i/o buffer"
+	@echo ""
+	$(call RUNTEST,./cat-hgetbuf 1048576)
+	$(call RUNTEST,./cat-bytestring 1048576)
 
-#	$(call RUNTEST,/usr/bin/wc)
-#	$(call RUNTEST,./wc-lazy)
-#	$(call RUNTEST,./wc-hgetbuf)
-#	$(call RUNTEST,./wc-blockio)
-#	$(call RUNTEST,./wc-whilem-bytestring)
-#	$(call RUNTEST,./new-io wcBuffer)
-#	$(call RUNTEST,./new-io wcBufferST)
-#	$(call RUNTEST,./new-io wcSlurpSP)
-#	$(call RUNTEST,./new-io wcByteStrSP)
-
-test.data:
-	dd if=/dev/urandom of=$@ bs=1M count=1024
+$(TESTDATA):
+	dd if=$(RANDOM_DEVICE) of=$@ bs=1G count=$(TESTDATA_SIZE)
 
 clean:
-	@rm -f `find . \( -name '*.o' -o -name '*.hi' \)`
+	@rm -f *.o *.hi
 	@rm -f $(TESTS)
 
 distclean:	clean
-	@rm -f test.data
+	@rm -f $(TESTDATA)
 
 depend:
-	${GHC} -M -optdep-f -optdepmakefile $(GHCFLAGS) `find . -name '*hs'`
+	${GHC} -M -dep-makefile GNUmakefile $(GHCFLAGS) `find . -name '*hs'`
