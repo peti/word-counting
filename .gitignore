@@ -1,15 +1,8 @@
+# ignore intermediate object files
 /*.hi
 /*.o
-/.ghci
+
+# ignore generated executables
 /cat
 /cat-bytestring
 /cat-hgetbuf
-/cat-malloc
-/cont-io
-/fast-io
-/new-io
-/test.data
-/wc-blockio
-/wc-hgetbuf
-/wc-lazy
-/wc-whilem-bytestring

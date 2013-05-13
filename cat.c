@@ -1,45 +1,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <time.h>
 
-enum { number_of_buffers = 1024 * 20, buffer_size = 4096 };
+enum { buffer_size = 4096 };
 
 int main(int argc, char** argv)
 {
-  void *        buffers[ number_of_buffers ];
-  size_t        i;
+  void *        p;
   int           rc;
 
-  srandom(time(NULL));
-
-  for (i = 0u; i != number_of_buffers; ++i)
+  for (;;)
   {
-    if (!(buffers[i] = malloc(buffer_size)))
+    p = malloc(buffer_size);
+    if (!p)
     {
       perror("malloc() failed");
       return 1;
     }
-  }
 
-  for (;;)
-  {
-    i = random() % number_of_buffers;
-    rc = read(STDIN_FILENO, buffers[i], buffer_size);
+    rc = read(STDIN_FILENO, p, buffer_size);
     if (rc > 0)
     {
-      rc -= write(STDOUT_FILENO, buffers[i], rc);
+      rc -= write(STDOUT_FILENO, p, rc);
       if (rc != 0)
       {
         perror("write() failed");
-        break;
+        return 1;
       }
     }
-    else
+    else if (rc < 0)
     {
-      if (rc < 0) perror("read() failed");
-      break;
+      perror("read() failed");
+      return 1;
     }
+    else
+      break;
+
+    free(p);
   }
 
   return 0;

@@ -1,20 +1,12 @@
-{-
-  Streambuf.hs
-
-  An I/O stream buffer.
--}
+-- Streambuf.hs
 
 module Streambuf where
 
 import Control.Exception
-import Control.Monad.RWS
-import Control.Monad.Cont
+import Control.Monad.State
 import Data.Char
 import Foreign
 import Foreign.C.Types
-import Foreign.C.Error
-import System.IO
-import System.IO.Error
 
 ----- Fundamental I/O Primitives
 

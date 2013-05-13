@@ -1,6 +1,5 @@
 module Main where
 
-import Prelude hiding (catch)
 import System.IO
 import Foreign
 import Foreign.C
@@ -33,8 +32,8 @@ alloc :: IO a                   -- construct a
       -> FIO r a                -- a waiting for computation to yield r
 alloc c d = withContT (\f _ -> bracket c d f) (return ())
 
-check_order :: FIO () ()
-check_order = alloc cons dest >> io (print "foo")
+checkOrder :: FIO () ()
+checkOrder = alloc cons dest >> io (print "foo")
   where cons   = print "before foo"
         dest _ = print "after foo"
 
@@ -50,14 +49,12 @@ readBlock :: Handle -> FIO r CStringLen
 readBlock h = do
   let blocksize = 1024
   eof <- io (hWaitForInput h (-1))
-  case eof of
-    True  -> return (nullPtr, 0)
-    False -> do
+  if eof
+    then return (nullPtr, 0)
+    else do
       p <- buffer blocksize
       i <- io (hGetBuf h p blocksize)
-      case i <= 0 of
-        True  -> return (nullPtr, 0)
-        False -> return (castPtr p, i)
+      return $ if i <= 0 then (nullPtr, 0) else (castPtr p, i)
 
 main :: IO ()
 main = fio $ readBlock stdin >>= io . peekCStringLen >>= spew stdout
