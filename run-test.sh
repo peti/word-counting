@@ -2,14 +2,14 @@
 
 set -eu -o pipefail
 
-tests=$( sed -n -e "s/^executable //p" word-counting.cabal )
+tests=$( sed -n -e "/wc-lazy/d" -e "s/^executable //p" word-counting.cabal )
 testData=/dev/shm/word-counting-data.txt
 
 cabal install --install-method=symlink --installdir=$PWD/bin
 
 if [ ! -f $testData ]; then
     echo "generate random test data ..."
-    dd if=/dev/urandom of="$testData" bs=1G count=1 iflag=fullblock status=progress
+    dd if=/dev/urandom of="$testData" bs=1G count=10 iflag=fullblock status=progress
 fi
 
 benchCmd=""

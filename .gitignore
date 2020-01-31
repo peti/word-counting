@@ -1,3 +1,5 @@
 # ignore generated files
 
+/bin/*
 /dist-newstyle/*
+/result.html
