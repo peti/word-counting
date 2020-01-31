@@ -1,15 +1,11 @@
-\ignore{ %%%%% Declarations required for Haskell %%%%%%%%%%%%%%%%%%%%%
-\begin{code}
 module Main ( main ) where
+
+import Glue
+import WordCounting
 
 import Control.Monad.State
 import Data.ByteString.Char8
-import WordCounting
-import Glue
-\end{code}
-}
 
-\begin{code}
 slurp :: (MonadIO m) => Handle -> MsecTimeout -> (ByteString -> m ()) -> m ()
 slurp h to f = whileM (waitForInput h to) (liftIO (hGetNonBlocking h (8 * 1024)) >>= f)
 
@@ -27,14 +23,3 @@ main = do
   hSetBuffering stderr LineBuffering
 
   execStateT (slurp stdin (-1) wcByteString) initWC >>= print
-\end{code}
-
-\begin{verbatim} aucl s
-
-%%%%% configure emacs
-%
-% Local variables:
-% mode: latex
-% fill-column: 72
-% mmm-classes: literate-haskell-latex
-% End:

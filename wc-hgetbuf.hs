@@ -10,9 +10,10 @@
 
 module Main ( main ) where
 
-import System.IO
-import Foreign
 import WordCounting
+
+import Foreign
+import System.IO
 
 bufsize :: Int                  -- our I/O buffer size
 bufsize = 4096

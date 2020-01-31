@@ -1,7 +1,7 @@
 module WordCounting ( WordCount(..), initWC, wc, wcBuffer ) where
 
-import Foreign
 import Data.Char
+import Foreign
 
 data WordCount = WC !Bool !Int !Int !Int
                      deriving (Show)

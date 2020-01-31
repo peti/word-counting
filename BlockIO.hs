@@ -40,7 +40,7 @@ data Buffer    = Buf !Capacity !(Ptr Word8) !ByteCount
 -- returns.
 
 withBuffer :: Capacity -> (Buffer -> IO a) -> IO a
-withBuffer 0 = fail "BlockIO.withBuffer with size 0 doesn't make sense"
+withBuffer 0 = const (fail "BlockIO.withBuffer with size 0 doesn't make sense")
 withBuffer n = bracket cons dest
   where
   cons = mallocArray (fromIntegral n) >>= \p -> return (Buf n p 0)

@@ -1,0 +1,37 @@
+cabal-version:       2.2
+name:                word-counting
+version:             0
+synopsis:            simple example for the unexpected consequences of lazy evaluation
+license:             MIT
+author:              Peter Simons
+maintainer:          simons@cryp.to
+copyright:           (C) 2007-2020 by Peter Simons
+build-type:          Simple
+
+common default-flags
+  default-language:  Haskell2010
+  ghc-options:       -O2 -funbox-strict-fields -Wall -Wcompat -Wincomplete-uni-patterns
+                     -Wincomplete-record-updates -Wredundant-constraints
+                     -with-rtsopts=-M2G
+  build-depends:     base >=4.13 && <4.14
+
+executable wc-lazy
+  import:            default-flags
+  main-is:           wc-lazy.hs
+
+executable wc-hgetbuf
+  import:            default-flags
+  main-is:           wc-hgetbuf.hs
+  other-modules:     WordCounting
+
+executable wc-whilem-bytestring
+  import:            default-flags
+  main-is:           wc-whilem-bytestring.hs
+  other-modules:     Glue, WordCounting
+  build-depends:     bytestring, mtl
+
+executable wc-blockio
+  import:            default-flags
+  main-is:           wc-blockio.hs
+  other-modules:     BlockIO, Glue, WordCounting
+  build-depends:     mtl

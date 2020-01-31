@@ -1,8 +1,3 @@
-# ignore intermediate object files
-/*.hi
-/*.o
+# ignore generated files
 
-# ignore generated executables
-/cat
-/cat-bytestring
-/cat-hgetbuf
+/dist-newstyle/*
