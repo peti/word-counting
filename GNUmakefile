@@ -7,9 +7,9 @@ GHCFLAGS        = -Wall -O2 -funbox-strict-fields
 
 RANDOM_DEVICE  := $(word 1, $(wildcard /dev/frandom /dev/urandom))
 TESTDATA        = /dev/shm/test.data
-TESTDATA_SIZE   = 10 # in GByte
+TESTDATA_SIZE   = 15 # in GByte
 
-TESTS           = cat cat-bytestring cat-hgetbuf
+TESTS           = cat-bytestring cat-hgetbuf
 
 RUNTEST         = time -p env -i PATH=$$PATH $1 <$(TESTDATA) >/dev/null
 
@@ -24,21 +24,21 @@ RUNTEST         = time -p env -i PATH=$$PATH $1 <$(TESTDATA) >/dev/null
 all:		$(TESTS)
 
 test:		all $(TESTDATA)
-	@echo "##### C cat with 4 KB i/o buffer"
+	@echo "##### POSIX cat with 32KB i/o buffer"
 	@echo ""
-	$(call RUNTEST,./cat)
+	$(call RUNTEST,cat)
 	@echo ""
-	@echo "##### Haskell cat with 32 KB i/o buffer"
+	@echo "##### Haskell cat with 32KB i/o buffer"
 	@echo ""
 	$(call RUNTEST,./cat-hgetbuf 32768)
 	$(call RUNTEST,./cat-bytestring 32768)
 	@echo ""
-	@echo "##### Haskell cat with 128 KB i/o buffer"
+	@echo "##### Haskell cat with 128KB i/o buffer"
 	@echo ""
 	$(call RUNTEST,./cat-hgetbuf 131072)
 	$(call RUNTEST,./cat-bytestring 131072)
 	@echo ""
-	@echo "##### Haskell cat with 1 GB i/o buffer"
+	@echo "##### Haskell cat with 1GB i/o buffer"
 	@echo ""
 	$(call RUNTEST,./cat-hgetbuf 1048576)
 	$(call RUNTEST,./cat-bytestring 1048576)
