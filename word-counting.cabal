@@ -13,7 +13,7 @@ common default-flags
   ghc-options:       -O2 -funbox-strict-fields -Wall -Wcompat -Wincomplete-uni-patterns
                      -Wincomplete-record-updates -Wredundant-constraints
                      -with-rtsopts=-M2G
-  build-depends:     base >=4.13 && <4.14
+  build-depends:     base >=4.14
 
 executable wc-lazy
   import:            default-flags

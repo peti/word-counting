@@ -23,7 +23,7 @@ import Data.Typeable
 import System.IO
 import System.IO.Error hiding ( catch )
 import Foreign  hiding ( new )
-import System.Timeout
+import System.Timeout ( timeout )
 
 -- * Static Buffer I\/O
 
