@@ -15,14 +15,14 @@
 
 module BlockIO where
 
-import Prelude hiding ( catch, rem )
+import Prelude hiding ( rem )
 import Control.Exception
-import Control.Monad.State
-import Data.List
+import Control.Monad
+import qualified Data.List as List
 import Data.Typeable
-import System.IO
-import System.IO.Error hiding ( catch )
 import Foreign  hiding ( new )
+import System.IO
+import System.IO.Error
 import System.Timeout ( timeout )
 
 -- * Static Buffer I\/O
@@ -160,15 +160,15 @@ strstr tok = strstr' 0
   where
   strstr'  _     []       = Nothing
   strstr' pos ls@(_:xs)
-    | tok `isPrefixOf` ls = Just (pos + length tok)
-    | otherwise           = strstr' (pos + 1) xs
+    | tok `List.isPrefixOf` ls = Just (pos + length tok)
+    | otherwise                = strstr' (pos + 1) xs
 
 -- |Split a list by some delimiter. Will soon be provided by
 -- "Data.List".
 
 splitList :: Eq a => [a] -> [a] -> [[a]]
 splitList d' l' =
-  unfoldr (\x -> if null x then Nothing else Just $ nextToken d' [] (snd $ splitAt (length d') x)) (d'++l')
+  List.unfoldr (\x -> if null x then Nothing else Just $ nextToken d' [] (snd $ splitAt (length d') x)) (d'++l')
   where nextToken _ r [] = (r, [])
-        nextToken d r l@(h:t) | d `isPrefixOf` l = (r, l)
-                              | otherwise = nextToken d (r++[h]) t
+        nextToken d r l@(h:t) | d `List.isPrefixOf` l = (r, l)
+                              | otherwise             = nextToken d (r++[h]) t
