@@ -1,16 +1,20 @@
 module Glue
   ( module Glue
+  , module Control.Monad
+  , module Control.Monad.Error.Class
+  , module Control.Monad.IO.Class
   , module System.IO
   , module System.IO.Error
-  , module Control.Monad.Error
   , module System.Timeout
   )
   where
 
+import Control.Exception ( bracket )
+import Control.Monad
+import Control.Monad.Error.Class
+import Control.Monad.IO.Class
 import System.IO
 import System.IO.Error
-import Control.Monad.Error
-import Control.Exception ( bracket )
 import System.Timeout
 
 -- * Error Handling
