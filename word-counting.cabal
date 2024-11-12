@@ -5,7 +5,7 @@ synopsis:            simple example for the unexpected consequences of lazy eval
 license:             MIT
 author:              Peter Simons
 maintainer:          simons@cryp.to
-copyright:           (C) 2007-2020 by Peter Simons
+copyright:           (C) 2007-2024 by Peter Simons
 build-type:          Simple
 
 common default-flags
